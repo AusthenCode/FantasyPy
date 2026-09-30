@@ -12,7 +12,7 @@ Open the rankings screen. This reads `players.xlsx` and does not print rankings 
 python Fantasy.py
 ```
 
-The window uses a black, orange, and white theme. Free agents are omitted from the rankings and search results. The **Global Rankings** tab shows global rank and lets you filter by QB, RB, WR, or TE, sort, and search players. **Positional Rankings** shows the top 10 players at QB, RB, WR, and TE. On the **Edit Rankings** tab, select a player to load their ranks into the form, then choose **Apply to Player** and **Save Changes** to update `players.xlsx`. Trade values continue to be calculated and stored in the workbook, but are not shown in the rankings window. **Refresh** reloads the workbook and prompts before discarding unsaved ranking changes. You can also launch the editor explicitly:
+The window uses a black, orange, and white theme. Free agents are omitted from the rankings and search results. The **Global Rankings** tab shows players in global-rank order and lets you search players. **Positional Rankings** shows the top 10 players at QB, RB, WR, and TE. The **Trade Calculator** is limited to the top 150 global players. Assign each player's trade value from 1 to 100 on the **Edit Rankings** tab; trades cannot be calculated until every selected player has a value. Select a player to edit their global rank, positional rank, or trade value, then choose **Apply to Player** and **Save Changes** to update `players.xlsx`. **Refresh** reloads the workbook and prompts before discarding unsaved ranking changes. You can also launch the editor explicitly:
 
 ```powershell
 python Fantasy.py gui --excel players.xlsx
