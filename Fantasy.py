@@ -368,6 +368,8 @@ class RankingsWindow:
 		self.dirty = False
 		self.selected_player_index: int | None = None
 		self.search = tk.StringVar()
+		self.editor_position_filter = tk.StringVar(value="All")
+		self.editor_sort_by = tk.StringVar(value="Global Rank")
 		self.edit_global_rank = tk.StringVar()
 		self.edit_positional_rank = tk.StringVar()
 		self.edit_trade_value = tk.StringVar()
@@ -456,6 +458,28 @@ class RankingsWindow:
 		edit_content = ttk.Frame(self.edit_tab, padding=(0, 8, 0, 12))
 		edit_content.pack(fill="both", expand=True)
 		ttk.Label(edit_content, text="Select a player to edit their global and positional ranks.", foreground=muted).pack(anchor="w", pady=(0, 8))
+		editor_controls = ttk.Frame(edit_content)
+		editor_controls.pack(fill="x", pady=(0, 8))
+		ttk.Label(editor_controls, text="Position").pack(side="left")
+		position_filter = ttk.Combobox(
+			editor_controls,
+			textvariable=self.editor_position_filter,
+			values=("All", *POSITIONS),
+			state="readonly",
+			width=8,
+		)
+		position_filter.pack(side="left", padx=(6, 18))
+		position_filter.bind("<<ComboboxSelected>>", lambda _event: self.refresh_editor_table())
+		ttk.Label(editor_controls, text="Sort by").pack(side="left")
+		sort_selector = ttk.Combobox(
+			editor_controls,
+			textvariable=self.editor_sort_by,
+			values=("Global Rank", "Position"),
+			state="readonly",
+			width=13,
+		)
+		sort_selector.pack(side="left", padx=(6, 0))
+		sort_selector.bind("<<ComboboxSelected>>", lambda _event: self.refresh_editor_table())
 		self.editor_table = self.create_rankings_table(edit_content, include_trade_value=True)
 		self.editor_table.bind("<<TreeviewSelect>>", self.select_player)
 
@@ -775,7 +799,14 @@ class RankingsWindow:
 		for item in self.editor_table.get_children():
 			self.editor_table.delete(item)
 		players = [(index, player) for index, player in enumerate(self.players) if player.team.casefold() != "fa"]
-		players.sort(key=lambda item: item[1].global_rank)
+		position_filter = self.editor_position_filter.get()
+		if position_filter != "All":
+			players = [(index, player) for index, player in players if player.position == position_filter]
+		if self.editor_sort_by.get() == "Position":
+			position_order = {position: index for index, position in enumerate(POSITIONS)}
+			players.sort(key=lambda item: (position_order[item[1].position], item[1].positional_rank, item[1].global_rank))
+		else:
+			players.sort(key=lambda item: item[1].global_rank)
 		for index, player in players:
 			value = trade_value(player)
 			value_display = f"{value:g}" if value else "N/A" if player.global_rank > 150 else "Unset"
