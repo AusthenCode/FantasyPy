@@ -33,6 +33,43 @@ class Player:
 	custom_trade_value: float | None = None
 
 
+def shift_player_rank(players: list[Player], player_index: int, new_rank: int, positional: bool = False) -> None:
+	player = players[player_index]
+	current_rank = player.positional_rank if positional else player.global_rank
+	if current_rank == new_rank:
+		return
+
+	for index, candidate in enumerate(players):
+		if index == player_index or (positional and candidate.position != player.position):
+			continue
+		candidate_rank = candidate.positional_rank if positional else candidate.global_rank
+		if current_rank < new_rank and current_rank < candidate_rank <= new_rank:
+			candidate_rank -= 1
+		elif new_rank < current_rank and new_rank <= candidate_rank < current_rank:
+			candidate_rank += 1
+		else:
+			continue
+		players[index] = (
+			replace(candidate, positional_rank=candidate_rank)
+			if positional
+			else replace(candidate, global_rank=candidate_rank)
+		)
+
+	players[player_index] = (
+		replace(player, positional_rank=new_rank)
+		if positional
+		else replace(player, global_rank=new_rank)
+	)
+
+
+def recalculate_positional_ranks(players: list[Player]) -> None:
+	position_counts = {position: 0 for position in POSITIONS}
+	for index in sorted(range(len(players)), key=lambda item: players[item].global_rank):
+		player = players[index]
+		position_counts[player.position] = position_counts.get(player.position, 0) + 1
+		players[index] = replace(player, positional_rank=position_counts[player.position])
+
+
 def trade_value(player: Player) -> float:
 	if player.global_rank > 150 or player.custom_trade_value is None:
 		return 0
@@ -457,7 +494,11 @@ class RankingsWindow:
 
 		edit_content = ttk.Frame(self.edit_tab, padding=(0, 8, 0, 12))
 		edit_content.pack(fill="both", expand=True)
-		ttk.Label(edit_content, text="Select a player to edit their global and positional ranks.", foreground=muted).pack(anchor="w", pady=(0, 8))
+		ttk.Label(
+			edit_content,
+			text="Global rank changes recalculate positional ranks from global order; positional-only changes shift players at that position.",
+			foreground=muted,
+		).pack(anchor="w", pady=(0, 8))
 		editor_controls = ttk.Frame(edit_content)
 		editor_controls.pack(fill="x", pady=(0, 8))
 		ttk.Label(editor_controls, text="Position").pack(side="left")
@@ -893,11 +934,15 @@ class RankingsWindow:
 			messagebox.showerror("Invalid values", "Ranks must be whole numbers above zero. Trade value must be blank or from 1 to 100.")
 			return
 		players = list(self.players)
-		original_player = players[self.selected_player_index]
+		global_rank_changed = players[self.selected_player_index].global_rank != global_rank
+		shift_player_rank(players, self.selected_player_index, global_rank)
+		if global_rank_changed:
+			recalculate_positional_ranks(players)
+		else:
+			shift_player_rank(players, self.selected_player_index, positional_rank, positional=True)
+		player = players[self.selected_player_index]
 		players[self.selected_player_index] = replace(
-			original_player,
-			global_rank=global_rank,
-			positional_rank=positional_rank,
+			player,
 			custom_trade_value=custom_trade_value if global_rank <= 150 else None,
 		)
 		self.players = tuple(players)
