@@ -81,7 +81,7 @@ def trade_value(player: Player) -> float:
 def calculated_trade_value(player: Player) -> float:
 	value = trade_value(player)
 	if player.global_rank <= 5:
-		return value * 2
+		return value * 1.75
 	if player.global_rank <= 10:
 		return value * 1.25
 	return value
